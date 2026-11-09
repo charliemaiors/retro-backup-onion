@@ -62,6 +62,17 @@ docker run --rm --platform linux/amd64 \
 
     export PATH=/opt/prebuilt/arm-linux-gnueabihf/bin:/opt/prebuilt/bin:/opt/mini/bin:$PATH
 
+    # Capture json-c before building SDL2/SwiftShader. The upstream build
+    # scripts can alter the mounted toolchain view, so do not search /opt
+    # again after the make targets have run.
+    JSONC_LIB=$(find -L /opt/mini /opt/prebuilt -type f -name "libjson-c.so.5*" -print -quit 2>/dev/null || true)
+    if [[ -z "$JSONC_LIB" ]]; then
+      echo "libjson-c.so.5 not found in the mounted Miyoo toolchain" >&2
+      exit 1
+    fi
+    mkdir -p /src/build/onion/RetroBackup/lib
+    cp -L "$JSONC_LIB" /src/build/onion/RetroBackup/lib/libjson-c.so.5
+
     cd /work/sdl2
     # Run all goals together: the upstream Makefile creates SDL2-to-SwiftShader
     # symlinks at parse time, so separate make invocations fail on existing links.
@@ -102,12 +113,6 @@ docker run --rm --platform linux/amd64 \
     cp /work/sdl2/sdl2/build/.libs/libSDL2-2.0.so.0 build/onion/RetroBackup/lib/
     cp -L /work/sdl2/swiftshader/build/libEGL.so /work/sdl2/swiftshader/build/libGLESv2.so build/onion/RetroBackup/lib/
 
-    JSONC_LIB=$(find /opt/mini /opt/prebuilt /work/sdl2 -name "libjson-c.so.5*" -print -quit)
-    if [[ -z "$JSONC_LIB" ]]; then
-      echo "libjson-c.so.5 not found in toolchain or SDL2 build tree" >&2
-      exit 1
-    fi
-    cp -L "$JSONC_LIB" build/onion/RetroBackup/lib/libjson-c.so.5
     cp /work/sdl2/LICENSE build/onion/RetroBackup/THIRD_PARTY_SDL_LICENSE.txt
     chmod +x build/onion/RetroBackup/launch.sh
 
