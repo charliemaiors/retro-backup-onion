@@ -122,4 +122,4 @@ docker run --rm --platform linux/amd64 \
     rm build/onion/RetroBackup/elf-header.txt
   '
 
-"${ROOT}/tools/package.sh"
+bash "${ROOT}/tools/package.sh"
