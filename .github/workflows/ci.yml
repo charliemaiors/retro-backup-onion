@@ -5,6 +5,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: retro-backup-ci-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   source-check:
     runs-on: ubuntu-24.04
