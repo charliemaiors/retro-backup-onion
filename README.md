@@ -28,7 +28,7 @@ The target SDL2 port and toolchain are fetched by the build script. Their upstre
 Requirements: Docker with BuildKit and `linux/amd64` emulation support.
 
 ```sh
-./tools/build-onion.sh
+bash ./tools/build-onion.sh
 ```
 
 Outputs:
