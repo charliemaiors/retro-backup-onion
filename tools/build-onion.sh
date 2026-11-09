@@ -77,6 +77,28 @@ docker run --rm --platform linux/amd64 \
       exit 1
     fi
 
+    # SDL2's Mini backend has DT_NEEDED entries for SigmaStar firmware
+    # libraries. Discover their actual toolchain location and expose it to ld
+    # while linking the executable (the device supplies these at runtime).
+    MI_LIB_DIRS=()
+    for lib in libmi_ao.so libshmvar.so libmi_common.so libmi_sys.so libmi_gfx.so; do
+      found=$(find -L /opt/mini /opt/prebuilt -type f -name "$lib" -print -quit)
+      if [[ -z "$found" ]]; then
+        echo "Required Miyoo firmware library not found in toolchain: $lib" >&2
+        find -L /opt/mini /opt/prebuilt -type f -name 'libmi*.so*' -o -name 'libshmvar.so*' >&2 || true
+        exit 1
+      fi
+      dir=$(dirname "$found")
+      case " ${MI_LIB_DIRS[*]} " in
+        *" $dir "*) ;;
+        *) MI_LIB_DIRS+=("$dir") ;;
+      esac
+    done
+    RPATH_LINK_FLAGS=""
+    for dir in "${MI_LIB_DIRS[@]}"; do
+      RPATH_LINK_FLAGS+=" -Wl,-rpath-link,$dir"
+    done
+
     cd /src
     cmake -S . -B build/miyoo \
       -DCMAKE_SYSTEM_NAME=Linux \
@@ -86,6 +108,8 @@ docker run --rm --platform linux/amd64 \
       -DRETRO_BACKUP_Miyoo=ON \
       -DSDL2_INCLUDE_DIR="$SDL_INC" \
       -DSDL2_LIBRARY="$SDL_LIB" \
+      "-DSDL2_EXTRA_LIBRARIES=/work/sdl2/swiftshader/build/libEGL.so;/work/sdl2/swiftshader/build/libGLESv2.so" \
+      "-DCMAKE_EXE_LINKER_FLAGS=$RPATH_LINK_FLAGS" \
       -DCMAKE_BUILD_TYPE=Release
 
     cmake --build build/miyoo --parallel 2
