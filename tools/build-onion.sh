@@ -69,13 +69,17 @@ docker run --rm --platform linux/amd64 \
     export PATH=/opt/prebuilt/arm-linux-gnueabihf/bin:/opt/prebuilt/bin:/opt/mini/bin:$PATH
 
     cd /work/sdl2
-    make cfg
-    make gpu
-    make sdl2
+    # The upstream Makefile creates SDL2-to-SwiftShader symlinks while it is
+    # parsed. Run all goals in one invocation so those links are created once.
+    make cfg gpu sdl2
 
     SDL_INC=/work/sdl2/sdl2/include
     SDL_LIB=/work/sdl2/sdl2/build/.libs/libSDL2-2.0.so
-    test -f "$SDL_LIB"
+    if [[ ! -f "$SDL_LIB" ]]; then
+      echo "Expected SDL2 shared library not found: $SDL_LIB" >&2
+      find /work/sdl2/sdl2/build -maxdepth 3 -name "libSDL2*" -ls >&2 || true
+      exit 1
+    fi
 
     cd /src
     cmake -S . -B build/miyoo \
