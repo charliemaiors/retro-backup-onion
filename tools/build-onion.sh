@@ -8,7 +8,7 @@ DIST="${ROOT}/dist"
 
 TOOLCHAIN_URL="${MIYOO_TOOLCHAIN_URL:-https://github.com/steward-fu/website/releases/download/miyoo-mini/mini_toolchain-v1.0.tar.gz}"
 SDL_REPO="${MIYOO_SDL2_REPOSITORY:-https://github.com/steward-fu/sdl2.git}"
-SDL_REF="${MIYOO_SDL2_REF:-master}"
+SDL_REF="${MIYOO_SDL2_REF:-0631abc8e8916db6f9bc7e2afd0c22913d092a29}"
 
 mkdir -p "${DEPS}" "${OUT}" "${DIST}"
 
@@ -105,9 +105,10 @@ docker run --rm --platform linux/amd64 \
     cp /work/sdl2/LICENSE build/onion/RetroBackup/THIRD_PARTY_SDL_LICENSE.txt
     chmod +x build/onion/RetroBackup/launch.sh
 
-    file build/onion/RetroBackup/retro-backup
-    readelf -h build/onion/RetroBackup/retro-backup | grep -E "Class:|Machine:"
-    readelf -h build/onion/RetroBackup/retro-backup | grep -q "Machine:.*ARM"
+    command -v readelf >/dev/null
+    readelf -h build/onion/RetroBackup/retro-backup > build/onion/RetroBackup/elf-header.txt
+    grep -Eq "Machine:.*ARM" build/onion/RetroBackup/elf-header.txt
+    rm build/onion/RetroBackup/elf-header.txt
   '
 
 "${ROOT}/tools/package.sh"
