@@ -1,6 +1,5 @@
 {
   "label": "Retro Backup",
-  "icon": "icon.png",
   "launch": "launch.sh",
   "description": "Backup and restore emulator saves"
 }
