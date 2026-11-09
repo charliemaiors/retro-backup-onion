@@ -12,10 +12,6 @@ SDL_REF="${MIYOO_SDL2_REF:-0631abc8e8916db6f9bc7e2afd0c22913d092a29}"
 
 mkdir -p "${DEPS}" "${OUT}" "${DIST}"
 
-# Keep the archive's directory structure intact. The upstream tarball is
-# documented as extracting a mini_toolchain-v1.0/ directory containing
-# separate mini/ and prebuilt/ trees; stripping a component can flatten it
-# and leave Docker mounting empty host directories.
 TOOLCHAIN_EXTRACT="${DEPS}/toolchain-extract"
 if [[ ! -d "${TOOLCHAIN_EXTRACT}" ]]; then
   echo "Downloading Miyoo toolchain (about 750 MB)..."
@@ -32,8 +28,6 @@ if [[ -z "${MINI_DIR}" || -z "${PREBUILT_DIR}" ]]; then
   exit 1
 fi
 
-# Validate the exact paths used by the upstream SDL2 build instructions
-# before Docker can silently create empty bind-mount source directories.
 for required in \
   "${MINI_DIR}/bin/arm-linux-gnueabihf-gcc" \
   "${PREBUILT_DIR}/arm-linux-gnueabihf/bin/ld.bfd" \
@@ -69,12 +63,14 @@ docker run --rm --platform linux/amd64 \
     export PATH=/opt/prebuilt/arm-linux-gnueabihf/bin:/opt/prebuilt/bin:/opt/mini/bin:$PATH
 
     cd /work/sdl2
-    # The upstream Makefile creates SDL2-to-SwiftShader symlinks while it is
-    # parsed. Run all goals in one invocation so those links are created once.
+    # Run all goals together: the upstream Makefile creates SDL2-to-SwiftShader
+    # symlinks at parse time, so separate make invocations fail on existing links.
     make cfg gpu sdl2
 
     SDL_INC=/work/sdl2/sdl2/include
-    SDL_LIB=/work/sdl2/sdl2/build/.libs/libSDL2-2.0.so
+    # Upstream libtool creates libSDL2.so -> libSDL2-2.0.so.0.18.2;
+    # it does not create an unversioned libSDL2-2.0.so.
+    SDL_LIB=/work/sdl2/sdl2/build/.libs/libSDL2.so
     if [[ ! -f "$SDL_LIB" ]]; then
       echo "Expected SDL2 shared library not found: $SDL_LIB" >&2
       find /work/sdl2/sdl2/build -maxdepth 3 -name "libSDL2*" -ls >&2 || true
