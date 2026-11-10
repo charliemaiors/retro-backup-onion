@@ -19,13 +19,19 @@ add_executable(retro-backup
 
 target_include_directories(retro-backup PRIVATE src)
 
+# GCC 8 ships std::filesystem in a separate library. The Miyoo OnionOS
+# cross-toolchain is GCC 8.2, so link it explicitly on older GNU compilers.
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
+    target_link_libraries(retro-backup PRIVATE stdc++fs)
+endif()
+
 if(RETRO_BACKUP_Miyoo)
     if(NOT DEFINED SDL2_INCLUDE_DIR OR NOT DEFINED SDL2_LIBRARY)
         message(FATAL_ERROR "Set SDL2_INCLUDE_DIR and SDL2_LIBRARY for the Miyoo SDL2 port")
     endif()
     target_include_directories(retro-backup PRIVATE "${SDL2_INCLUDE_DIR}")
     target_link_libraries(retro-backup PRIVATE "${SDL2_LIBRARY}" ${SDL2_EXTRA_LIBRARIES})
-    target_link_options(retro-backup PRIVATE "-Wl,-rpath,\$ORIGIN/lib")
+    target_link_options(retro-backup PRIVATE "-Wl,-rpath,\\$ORIGIN/lib")
 else()
     find_package(SDL2 REQUIRED)
     if(TARGET SDL2::SDL2)
