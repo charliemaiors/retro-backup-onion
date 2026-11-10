@@ -1,5 +1,7 @@
 #include "app.hpp"
 #include "font.hpp"
+#include "sftp.hpp"
+#include <cstdlib>
 #include <algorithm>
 
 namespace rb {
@@ -15,6 +17,7 @@ const SDL_Color selected{54, 73, 88, 255};
 
 App::App() = default;
 App::~App() {
+    delete configStore_;
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (window_) SDL_DestroyWindow(window_);
     SDL_Quit();
@@ -32,6 +35,16 @@ bool App::init() {
     SDL_ShowCursor(SDL_DISABLE);
     SDL_JoystickEventState(SDL_ENABLE);
     SDL_GameControllerEventState(SDL_ENABLE);
+    char* basePath = SDL_GetBasePath();
+    if (!basePath) return false;
+    configStore_ = new ConfigStore(basePath);
+    SDL_free(basePath);
+    std::string configError;
+    if (!configStore_->load(config_, configError)) {
+        settingsMessage_ = configError;
+        configStore_->save(config_, configError);
+    }
+    status_ = config_.host.empty() ? "NOT CONFIGURED" : "SFTP CONFIGURED";
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) SDL_GameControllerOpen(i);
         else SDL_JoystickOpen(i);
@@ -96,6 +109,13 @@ void App::handleEvent(const SDL_Event& e) {
 }
 
 void App::activate() {
+    if (screen_ == Screen::Settings) {
+        std::string result;
+        const bool ok = testSftpConnection(config_, *configStore_, result);
+        settingsMessage_ = result;
+        status_ = ok ? "SFTP ONLINE" : "SFTP ERROR";
+        return;
+    }
     if (screen_ != Screen::Home) { goBack(); return; }
     switch (selection_) {
         case 0: screen_ = Screen::Backup; break;
@@ -130,6 +150,20 @@ void App::renderHome() {
     }
 }
 
+void App::renderSettings() {
+    std::vector<std::string> lines = {
+        "HOST: " + (config_.host.empty() ? "NOT SET" : config_.host),
+        "PORT: " + config_.port,
+        "USER: " + (config_.username.empty() ? "NOT SET" : config_.username),
+        "REMOTE: " + config_.remotePath,
+        "SSH KEY: " + config_.identityFile,
+        "HOST KEYS: " + config_.knownHostsFile,
+        settingsMessage_,
+        "A: TEST CONNECTION"
+    };
+    renderInfo("SFTP SETTINGS", lines);
+}
+
 void App::renderInfo(const std::string& title, const std::vector<std::string>& lines) {
     drawPanel(32, 84, 576, 340, panel);
     rb::drawText(renderer_, 64, 112, title, accent, 3);
@@ -158,8 +192,7 @@ void App::render() {
         case Screen::Restore:
             renderInfo("RESTORE", {"NO VERIFIED BACKUPS FOUND", "RESTORE ENGINE NOT IMPLEMENTED"});
             break;
-        case Screen::Settings:
-            renderInfo("SETTINGS", {"SERVER CONFIGURATION", "DEVICE ID", "AUTOMATIC BACKUP"});
+        case Screen::Settings: renderSettings(); break;
             break;
         case Screen::About:
             renderInfo("ABOUT", {"RETRO BACKUP 0.1.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});
