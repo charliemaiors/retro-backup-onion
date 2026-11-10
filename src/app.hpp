@@ -21,6 +21,7 @@ private:
     int selection_{0};
     std::string status_{"NOT CONFIGURED"};
     std::string settingsMessage_{"A: TEST SFTP CONNECTION"};
+    std::string backupMessage_{"A: START MANUAL BACKUP"};
     Config config_;
     ConfigStore* configStore_{nullptr};
     std::vector<std::string> homeItems_{
