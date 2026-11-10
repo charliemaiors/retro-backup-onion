@@ -151,17 +151,23 @@ void App::renderHome() {
 }
 
 void App::renderSettings() {
-    std::vector<std::string> lines = {
+    drawPanel(32, 84, 576, 340, panel);
+    rb::drawText(renderer_, 64, 112, "SFTP SETTINGS", accent, 3);
+    const std::vector<std::string> lines = {
         "HOST: " + (config_.host.empty() ? "NOT SET" : config_.host),
         "PORT: " + config_.port,
         "USER: " + (config_.username.empty() ? "NOT SET" : config_.username),
         "REMOTE: " + config_.remotePath,
         "SSH KEY: " + config_.identityFile,
-        "HOST KEYS: " + config_.knownHostsFile,
-        settingsMessage_,
-        "A: TEST CONNECTION"
+        "HOST KEYS: " + config_.knownHostsFile
     };
-    renderInfo("SFTP SETTINGS", lines);
+    int y = 165;
+    for (const auto& line : lines) {
+        rb::drawText(renderer_, 64, y, line, white, 1);
+        y += 25;
+    }
+    rb::drawText(renderer_, 64, 335, settingsMessage_, accent, 1);
+    rb::drawText(renderer_, 64, 380, "A: TEST CONNECTION    B: BACK", muted, 2);
 }
 
 void App::renderInfo(const std::string& title, const std::vector<std::string>& lines) {
@@ -179,7 +185,7 @@ void App::render() {
     SDL_SetRenderDrawColor(renderer_, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer_);
     rb::drawText(renderer_, 32, 28, "RETRO BACKUP", white, 2);
-    rb::drawText(renderer_, 490, 28, "MVP 0.1", muted, 2);
+    rb::drawText(renderer_, 490, 28, "MVP 0.2", muted, 2);
 
     switch (screen_) {
         case Screen::Home: renderHome(); break;
@@ -187,15 +193,14 @@ void App::render() {
             renderInfo("BACKUP NOW", {"BACKUP ENGINE NOT IMPLEMENTED", "THIS IS THE UI SCAFFOLD"});
             break;
         case Screen::History:
-            renderInfo("BACKUP HISTORY", {"NO BACKUPS YET", "SFTP BACKEND COMING NEXT"});
+            renderInfo("BACKUP HISTORY", {"NO BACKUPS YET", "CONFIGURE SFTP IN CONFIG.INI"});
             break;
         case Screen::Restore:
             renderInfo("RESTORE", {"NO VERIFIED BACKUPS FOUND", "RESTORE ENGINE NOT IMPLEMENTED"});
             break;
         case Screen::Settings: renderSettings(); break;
-            break;
         case Screen::About:
-            renderInfo("ABOUT", {"RETRO BACKUP 0.1.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});
+            renderInfo("ABOUT", {"RETRO BACKUP 0.2.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});
             break;
     }
     rb::drawText(renderer_, 32, 448, "D-PAD: MOVE    A: SELECT    B: BACK", muted, 1);
