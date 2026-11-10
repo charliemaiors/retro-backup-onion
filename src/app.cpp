@@ -69,13 +69,30 @@ void App::drawPanel(int x, int y, int w, int h, SDL_Color color) {
     SDL_RenderFillRect(renderer_, &r);
 }
 
+int App::selectionLimit() const {
+    if (screen_ == Screen::Home) return static_cast<int>(homeItems_.size()) - 1;
+    if (screen_ == Screen::History || screen_ == Screen::Restore)
+        return backups_.empty() ? 0 : std::min(6, static_cast<int>(backups_.size()) - 1);
+    return 0;
+}
+
+void App::loadHistory() {
+    std::vector<std::string> found;
+    std::string result;
+    if (listRemoteBackups(config_, *configStore_, found, result)) backups_ = found;
+    else backups_.clear();
+    historyMessage_ = result;
+    restoreConfirm_ = false;
+    selection_ = 0;
+}
+
 void App::handleEvent(const SDL_Event& e) {
     if (e.type == SDL_QUIT) { running_ = false; return; }
     if (e.type == SDL_CONTROLLERBUTTONDOWN) {
         switch (e.cbutton.button) {
             case SDL_CONTROLLER_BUTTON_DPAD_UP: selection_ = std::max(0, selection_ - 1); break;
             case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
-                selection_ = std::min((screen_ == Screen::Home ? static_cast<int>(homeItems_.size()) : 0) - 1, selection_ + 1); break;
+                selection_ = std::min(selectionLimit(), selection_ + 1); break;
             case SDL_CONTROLLER_BUTTON_A: activate(); break;
             case SDL_CONTROLLER_BUTTON_B: goBack(); break;
             case SDL_CONTROLLER_BUTTON_START: running_ = false; break;
@@ -97,8 +114,7 @@ void App::handleEvent(const SDL_Event& e) {
         case SDLK_UP: case SDLK_w:
             selection_ = std::max(0, selection_ - 1); break;
         case SDLK_DOWN: case SDLK_s:
-            selection_ = std::min((screen_ == Screen::Home ? static_cast<int>(homeItems_.size()) : 0) - 1,
-                                  selection_ + 1); break;
+            selection_ = std::min(selectionLimit(), selection_ + 1); break;
         case SDLK_RETURN: case SDLK_SPACE: case SDLK_z:
             activate(); break;
         case SDLK_ESCAPE: case SDLK_x: case SDLK_BACKSPACE:
@@ -110,6 +126,20 @@ void App::handleEvent(const SDL_Event& e) {
 }
 
 void App::activate() {
+    if (screen_ == Screen::History) { loadHistory(); return; }
+    if (screen_ == Screen::Restore) {
+        if (backups_.empty() || selection_ >= static_cast<int>(backups_.size())) { loadHistory(); return; }
+        if (!restoreConfirm_) { restoreConfirm_ = true; historyMessage_ = "A AGAIN: RESTORE " + backups_[selection_]; return; }
+        const std::string selectedBackup = backups_[selection_];
+        std::string result;
+        const bool ok = restoreRemoteBackup(config_, *configStore_, selectedBackup, result);
+        historyMessage_ = result;
+        restoreConfirm_ = false;
+        status_ = ok ? "RESTORE COMPLETE" : "RESTORE ERROR";
+        loadHistory();
+        historyMessage_ = result;
+        return;
+    }
     if (screen_ == Screen::Backup) {
         std::string result;
         const bool ok = createAndUploadBackup(config_, *configStore_, result);
@@ -127,8 +157,8 @@ void App::activate() {
     if (screen_ != Screen::Home) { goBack(); return; }
     switch (selection_) {
         case 0: screen_ = Screen::Backup; break;
-        case 1: screen_ = Screen::History; break;
-        case 2: screen_ = Screen::Restore; break;
+        case 1: screen_ = Screen::History; loadHistory(); break;
+        case 2: screen_ = Screen::Restore; loadHistory(); break;
         case 3: screen_ = Screen::Settings; break;
         case 4: screen_ = Screen::About; break;
         default: running_ = false; break;
@@ -189,6 +219,29 @@ void App::renderInfo(const std::string& title, const std::vector<std::string>& l
     rb::drawText(renderer_, 64, 380, "B: BACK", muted, 2);
 }
 
+void App::renderBackupList(bool restoreMode) {
+    drawPanel(32, 84, 576, 340, panel);
+    rb::drawText(renderer_, 64, 112, restoreMode ? "RESTORE BACKUP" : "BACKUP HISTORY", accent, 3);
+    rb::drawText(renderer_, 64, 154, historyMessage_, muted, 1);
+    if (backups_.empty()) {
+        rb::drawText(renderer_, 64, 210, "NO COMPLETED BACKUPS", white, 2);
+    } else {
+        int y = 190;
+        const int count = std::min(7, static_cast<int>(backups_.size()));
+        for (int i = 0; i < count; ++i) {
+            if (i == selection_) drawPanel(54, y - 5, 532, 30, selected);
+            rb::drawText(renderer_, 70, y, (i == selection_ ? "> " : "  ") + backups_[i],
+                         i == selection_ ? accent : white, 1);
+            y += 29;
+        }
+    }
+    if (restoreMode && restoreConfirm_)
+        rb::drawText(renderer_, 64, 382, "PRESS A AGAIN TO CONFIRM RESTORE", accent, 1);
+    else
+        rb::drawText(renderer_, 64, 382, restoreMode ? "A: SELECT / CONFIRM RESTORE" : "A: REFRESH", muted, 1);
+    rb::drawText(renderer_, 64, 402, "B: BACK", muted, 1);
+}
+
 void App::render() {
     SDL_SetRenderDrawColor(renderer_, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer_);
@@ -200,12 +253,8 @@ void App::render() {
         case Screen::Backup:
             renderInfo("BACKUP NOW", {backupMessage_, "A: START / RETRY BACKUP", "B: BACK"});
             break;
-        case Screen::History:
-            renderInfo("BACKUP HISTORY", {"NO BACKUPS YET", "CONFIGURE SFTP IN CONFIG.INI"});
-            break;
-        case Screen::Restore:
-            renderInfo("RESTORE", {"NO VERIFIED BACKUPS FOUND", "RESTORE ENGINE NOT IMPLEMENTED"});
-            break;
+        case Screen::History: renderBackupList(false); break;
+        case Screen::Restore: renderBackupList(true); break;
         case Screen::Settings: renderSettings(); break;
         case Screen::About:
             renderInfo("ABOUT", {"RETRO BACKUP 0.2.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});

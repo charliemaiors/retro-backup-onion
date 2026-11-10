@@ -22,6 +22,9 @@ private:
     std::string status_{"NOT CONFIGURED"};
     std::string settingsMessage_{"A: TEST SFTP CONNECTION"};
     std::string backupMessage_{"A: START MANUAL BACKUP"};
+    std::string historyMessage_{"A: REFRESH HISTORY"};
+    std::vector<std::string> backups_;
+    bool restoreConfirm_{false};
     Config config_;
     ConfigStore* configStore_{nullptr};
     std::vector<std::string> homeItems_{
@@ -35,5 +38,8 @@ private:
     void activate();
     void goBack();
     void drawPanel(int x, int y, int w, int h, SDL_Color color);
+    int selectionLimit() const;
+    void loadHistory();
+    void renderBackupList(bool restoreMode);
 };
 }

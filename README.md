@@ -2,24 +2,17 @@
 
 Native OnionOS companion app for backing up and restoring emulator saves.
 
-**Status:** 0.3 - manual SFTP snapshot upload implemented; history, restore and scheduling remain in progress.
-
-## Target
-
-- Miyoo Mini Plus
-- OnionOS 4.3.x
-- SDL2 UI
-- Docker-based ARM hard-float cross-build
-- GitHub Actions CI
+**Status:** 0.4 - manual SFTP snapshots, remote history and verified restore implemented. Interval scheduling is next.
 
 ## Features
 
 - D-pad/button-driven SDL2 interface.
-- SFTP connection configuration via `config.ini`.
-- SSH key authentication with strict pinned host-key verification.
-- SFTP connection test with an 8-second connect timeout and bounded overall execution.
+- SFTP configuration via `config.ini`, SSH key authentication and strict pinned host-key verification.
 - Manual snapshot of the complete OnionOS `Saves` directory.
-- SHA-256 manifest and temporary remote upload directory renamed only after successful transfer.
+- SHA-256 manifest and temporary remote upload directory published by rename after successful transfer.
+- Remote history lists only completed timestamped backup directories; `.incomplete-*` uploads are ignored.
+- Restore downloads the selected archive, verifies its SHA-256 digest, validates archive paths and rejects links/special files before extraction.
+- Restore stages a new `Saves` tree beside the current one, then renames the existing tree to `Saves.rollback-<timestamp>` before activating the restored tree. The rollback directory is intentionally retained.
 - Host CMake build, ARM cross-build and OnionOS App Folder packaging.
 
 ## Build
@@ -55,7 +48,7 @@ The script downloads the Miyoo toolchain and SDL2 port source into `.deps/`. The
    ```
 
    Do not trust the `ssh-keyscan` output until its fingerprint has been independently verified.
-5. Copy `id_ed25519` and `known_hosts` into `/App/RetroBackup/`. The connection check copies the private key into a temporary mode-0600 file before invoking OpenSSH, which also works around FAT/exFAT permission limitations. Keep the SD card physically secure.
+5. Copy `id_ed25519` and `known_hosts` into `/App/RetroBackup/`. The app copies the private key into a temporary mode-0600 file before invoking OpenSSH, which also works around FAT/exFAT permission limitations. Keep the SD card physically secure.
 6. Edit `/App/RetroBackup/config.ini`:
 
    ```ini
@@ -65,12 +58,20 @@ The script downloads the Miyoo toolchain and SDL2 port source into `.deps/`. The
    remote_path=/retro-backup
    identity_file=id_ed25519
    known_hosts_file=known_hosts
-saves_path=../../Saves
+   saves_path=../../Saves
    ```
 
 7. Launch Retro Backup, open **Settings**, and press **A** to test the SFTP connection.
 
-Relative credential paths are resolved beside the application. Absolute paths are also accepted. The app requires OpenSSH-compatible `sftp`, `tar` and `sha256sum` executables on the OnionOS device. The configured remote directory must already exist and be writable. Manual backup creates a temporary archive on the SD card, uploads it with a SHA-256 manifest, and removes local temporary files afterward.
+Relative credential paths are resolved beside the application. Absolute paths are also accepted. The app requires OpenSSH-compatible `sftp`, `tar` and `sha256sum` executables on OnionOS. The configured remote directory must already exist and be writable.
+
+## Backup and restore behavior
+
+Backups include the complete `Saves` directory, not just the active RetroArch profile. Close games and avoid changing save files while a backup or restore is running; the app does not lock emulator save files.
+
+The restore screen requires selecting a backup and pressing **A** a second time to confirm. A successful restore leaves the previous directory alongside it as `Saves.rollback-<timestamp>`; delete that directory manually only after confirming the restored games work. The app does not delete remote backups or apply retention.
+
+The history view reads directory metadata from the SFTP server. Completed backup folders use names like `YYYYMMDDTHHMMSSZ-PID`; temporary `.incomplete-*` folders are not shown.
 
 ## Desktop development
 
@@ -100,9 +101,9 @@ The app does not patch `runtime.sh`, stop MainUI, or install a boot-time daemon.
 
 ## Current limitations
 
-- Manual backup implementation is being developed against the complete OnionOS `Saves` directory; history, restore and interval scheduler remain outstanding.
-- SFTP connectivity depends on an OpenSSH-compatible `sftp` client being present in OnionOS; this must be confirmed on physical hardware.
+- Backup and restore operations currently run synchronously in the UI; long transfers temporarily block input. Background execution and interval scheduling are the next implementation step.
 - The connection test validates authentication and host-key trust, but does not yet verify remote directory write permissions.
+- SFTP, tar and sha256sum availability and SFTP server listing behavior still require validation on physical Miyoo hardware and against a real server.
 - UI/device controller mapping still requires hardware validation.
 - The bundled runtime SDL libraries are built from the upstream Miyoo SDL port; preserve its LGPL-2.1 license and notices when distributing.
 

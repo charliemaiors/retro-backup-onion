@@ -1,30 +1,18 @@
 cmake_minimum_required(VERSION 3.16)
 project(retro_backup VERSION 0.1.0 LANGUAGES CXX)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
-
 option(RETRO_BACKUP_Miyoo "Build for Miyoo Mini Plus / OnionOS" OFF)
 option(RETRO_BACKUP_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
-
 add_executable(retro-backup
-    src/main.cpp
-    src/app.cpp
-    src/font.cpp
-    src/config.cpp
-    src/sftp.cpp
-    src/backup.cpp
+    src/main.cpp src/app.cpp src/font.cpp src/config.cpp src/sftp.cpp
+    src/backup.cpp src/history.cpp
 )
-
 target_include_directories(retro-backup PRIVATE src)
-
-# GCC 8 ships std::filesystem in a separate library. The Miyoo OnionOS
-# cross-toolchain is GCC 8.2, so link it explicitly on older GNU compilers.
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
     target_link_libraries(retro-backup PRIVATE stdc++fs)
 endif()
-
 if(RETRO_BACKUP_Miyoo)
     if(NOT DEFINED SDL2_INCLUDE_DIR OR NOT DEFINED SDL2_LIBRARY)
         message(FATAL_ERROR "Set SDL2_INCLUDE_DIR and SDL2_LIBRARY for the Miyoo SDL2 port")
@@ -41,10 +29,6 @@ else()
         target_link_libraries(retro-backup PRIVATE ${SDL2_LIBRARIES})
     endif()
 endif()
-
-target_compile_options(retro-backup PRIVATE
-    -Wall -Wextra -Wpedantic
-    $<$<BOOL:${RETRO_BACKUP_WARNINGS_AS_ERRORS}>:-Werror>
-)
-
+target_compile_options(retro-backup PRIVATE -Wall -Wextra -Wpedantic
+    $<$<BOOL:${RETRO_BACKUP_WARNINGS_AS_ERRORS}>:-Werror>)
 install(TARGETS retro-backup RUNTIME DESTINATION .)
