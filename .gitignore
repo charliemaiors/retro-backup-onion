@@ -6,3 +6,4 @@ dist/
 *.so
 *.so.*
 .cache/
+\n# Device-local SSH credentials (never commit private keys)\nid_ed25519\nid_ed25519.*\n*.pem\nknown_hosts\n
