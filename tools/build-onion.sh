@@ -109,7 +109,7 @@ docker run --rm --platform linux/amd64 \
 
     mkdir -p build/onion/RetroBackup/lib
     cp build/miyoo/retro-backup build/onion/RetroBackup/
-    cp onion/RetroBackup/config.json onion/RetroBackup/launch.sh onion/RetroBackup/README.txt build/onion/RetroBackup/
+    cp onion/RetroBackup/config.json onion/RetroBackup/config.ini onion/RetroBackup/launch.sh onion/RetroBackup/README.txt build/onion/RetroBackup/
     cp /work/sdl2/sdl2/build/.libs/libSDL2-2.0.so.0 build/onion/RetroBackup/lib/
     cp -L /work/sdl2/swiftshader/build/libEGL.so /work/sdl2/swiftshader/build/libGLESv2.so build/onion/RetroBackup/lib/
 
