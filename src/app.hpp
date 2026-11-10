@@ -3,6 +3,8 @@
 #include "config.hpp"
 #include <string>
 #include <vector>
+#include <memory>
+#include "backup_worker.hpp"
 
 namespace rb {
 class App {
@@ -26,6 +28,7 @@ private:
     std::vector<std::string> backups_;
     bool restoreConfirm_{false};
     Config config_;
+    std::unique_ptr<BackupWorker> backupWorker_;
     ConfigStore* configStore_{nullptr};
     std::vector<std::string> homeItems_{
         "BACKUP NOW", "BACKUP HISTORY", "RESTORE", "SETTINGS", "ABOUT", "EXIT"

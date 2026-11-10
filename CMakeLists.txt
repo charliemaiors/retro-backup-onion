@@ -7,9 +7,11 @@ option(RETRO_BACKUP_Miyoo "Build for Miyoo Mini Plus / OnionOS" OFF)
 option(RETRO_BACKUP_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 add_executable(retro-backup
     src/main.cpp src/app.cpp src/font.cpp src/config.cpp src/sftp.cpp
-    src/backup.cpp src/history.cpp
+    src/backup.cpp src/history.cpp src/backup_worker.cpp
 )
+find_package(Threads REQUIRED)
 target_include_directories(retro-backup PRIVATE src)
+target_link_libraries(retro-backup PRIVATE Threads::Threads)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS 9)
     target_link_libraries(retro-backup PRIVATE stdc++fs)
 endif()

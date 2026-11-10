@@ -18,6 +18,7 @@ const SDL_Color selected{54, 73, 88, 255};
 
 App::App() = default;
 App::~App() {
+    backupWorker_.reset();
     delete configStore_;
     if (renderer_) SDL_DestroyRenderer(renderer_);
     if (window_) SDL_DestroyWindow(window_);
@@ -46,6 +47,8 @@ bool App::init() {
         configStore_->save(config_, configError);
     }
     status_ = config_.host.empty() ? "NOT CONFIGURED" : "SFTP CONFIGURED";
+    // A single automatic backup is queued as soon as the application opens.
+    backupWorker_.reset(new BackupWorker(config_, *configStore_));
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) SDL_GameControllerOpen(i);
         else SDL_JoystickOpen(i);
@@ -128,6 +131,7 @@ void App::handleEvent(const SDL_Event& e) {
 void App::activate() {
     if (screen_ == Screen::History) { loadHistory(); return; }
     if (screen_ == Screen::Restore) {
+        if (backupWorker_ && backupWorker_->busy()) { historyMessage_ = "WAIT FOR BACKUP TO FINISH"; return; }
         if (backups_.empty() || selection_ >= static_cast<int>(backups_.size())) { loadHistory(); return; }
         if (!restoreConfirm_) { restoreConfirm_ = true; historyMessage_ = "A AGAIN: RESTORE " + backups_[selection_]; return; }
         const std::string selectedBackup = backups_[selection_];
@@ -141,10 +145,12 @@ void App::activate() {
         return;
     }
     if (screen_ == Screen::Backup) {
-        std::string result;
-        const bool ok = createAndUploadBackup(config_, *configStore_, result);
-        backupMessage_ = result;
-        status_ = ok ? "BACKUP COMPLETE" : "BACKUP ERROR";
+        if (backupWorker_ && backupWorker_->request()) {
+            backupMessage_ = "BACKUP QUEUED";
+            status_ = "BACKUP QUEUED";
+        } else {
+            backupMessage_ = backupWorker_ ? backupWorker_->message() : "BACKUP WORKER UNAVAILABLE";
+        }
         return;
     }
     if (screen_ == Screen::Settings) {
@@ -246,18 +252,18 @@ void App::render() {
     SDL_SetRenderDrawColor(renderer_, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer_);
     rb::drawText(renderer_, 32, 28, "RETRO BACKUP", white, 2);
-    rb::drawText(renderer_, 490, 28, "MVP 0.3", muted, 2);
+    rb::drawText(renderer_, 490, 28, "MVP 0.5", muted, 2);
 
     switch (screen_) {
         case Screen::Home: renderHome(); break;
         case Screen::Backup:
-            renderInfo("BACKUP NOW", {backupMessage_, "A: START / RETRY BACKUP", "B: BACK"});
+            renderInfo("BACKUP NOW", {backupWorker_ ? backupWorker_->message() : backupMessage_, "A: START / RETRY BACKUP", "B: BACK"});
             break;
         case Screen::History: renderBackupList(false); break;
         case Screen::Restore: renderBackupList(true); break;
         case Screen::Settings: renderSettings(); break;
         case Screen::About:
-            renderInfo("ABOUT", {"RETRO BACKUP 0.2.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});
+            renderInfo("ABOUT", {"RETRO BACKUP 0.5.0", "ONIONOS COMMUNITY APP", "OPEN SOURCE PROJECT"});
             break;
     }
     rb::drawText(renderer_, 32, 448, "D-PAD: MOVE    A: SELECT    B: BACK", muted, 1);
