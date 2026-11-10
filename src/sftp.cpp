@@ -40,6 +40,7 @@ bool testSftpConnection(const Config& c,const ConfigStore& store,std::string& me
         }
         if(!copied)break;
     }
+    if(keyInput.bad())copied=false;
     if(fchmod(tempFd,0600)!=0)copied=false;
     close(tempFd);
     if(!copied){unlink(tempTemplate);message="CANNOT STAGE SSH PRIVATE KEY";return false;}
