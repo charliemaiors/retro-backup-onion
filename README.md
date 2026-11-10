@@ -53,7 +53,7 @@ The script downloads the Miyoo toolchain and SDL2 port source into `.deps/`. The
    ```
 
    Do not trust the `ssh-keyscan` output until its fingerprint has been independently verified.
-5. Copy `id_ed25519` and `known_hosts` into `/App/RetroBackup/`. Set the private key to mode 600 where possible.
+5. Copy `id_ed25519` and `known_hosts` into `/App/RetroBackup/`. The connection check copies the private key into a temporary mode-0600 file before invoking OpenSSH, which also works around FAT/exFAT permission limitations. Keep the SD card physically secure.
 6. Edit `/App/RetroBackup/config.ini`:
 
    ```ini
