@@ -1,5 +1,6 @@
 #pragma once
 #include <SDL.h>
+#include "config.hpp"
 #include <string>
 #include <vector>
 
@@ -19,12 +20,16 @@ private:
     Screen screen_{Screen::Home};
     int selection_{0};
     std::string status_{"NOT CONFIGURED"};
+    std::string settingsMessage_{"A: TEST SFTP CONNECTION"};
+    Config config_;
+    ConfigStore* configStore_{nullptr};
     std::vector<std::string> homeItems_{
         "BACKUP NOW", "BACKUP HISTORY", "RESTORE", "SETTINGS", "ABOUT", "EXIT"
     };
     void handleEvent(const SDL_Event& event);
     void render();
     void renderHome();
+    void renderSettings();
     void renderInfo(const std::string& title, const std::vector<std::string>& lines);
     void activate();
     void goBack();
