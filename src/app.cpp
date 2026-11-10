@@ -185,6 +185,12 @@ void App::renderHome() {
     rb::drawText(renderer_, 64, 190, "LAST BACKUP", muted, 2);
     rb::drawText(renderer_, 220, 190, "NOT AVAILABLE", white, 2);
 
+    // Operational reminder: the startup backup runs in the background,
+    // but the application must remain open until the transfer completes.
+    drawPanel(56, 207, 528, 22, SDL_Color{91, 66, 35, 255});
+    rb::drawText(renderer_, 66, 213, "IMPORTANT: KEEP APP OPEN WHILE BACKUP RUNS",
+                 SDL_Color{255, 211, 145, 255}, 1);
+
     int y = 238;
     for (size_t i = 0; i < homeItems_.size(); ++i) {
         if (static_cast<int>(i) == selection_) drawPanel(56, y - 8, 528, 34, selected);
@@ -221,6 +227,11 @@ void App::renderInfo(const std::string& title, const std::vector<std::string>& l
     for (const auto& line : lines) {
         rb::drawText(renderer_, 64, y, line, white, 2);
         y += 34;
+    }
+    if (title == "BACKUP NOW") {
+        drawPanel(54, 292, 532, 30, SDL_Color{91, 66, 35, 255});
+        rb::drawText(renderer_, 64, 301, "KEEP APP OPEN UNTIL THE BACKUP FINISHES",
+                     SDL_Color{255, 211, 145, 255}, 1);
     }
     rb::drawText(renderer_, 64, 380, "B: BACK", muted, 2);
 }
