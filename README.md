@@ -2,7 +2,7 @@
 
 Native OnionOS companion app for backing up and restoring emulator saves.
 
-**Status:** 0.2 - SFTP configuration and connection test implemented. Backup and restore operations are the next milestones.
+**Status:** 0.3 - manual SFTP snapshot upload implemented; history, restore and scheduling remain in progress.
 
 ## Target
 
@@ -18,6 +18,8 @@ Native OnionOS companion app for backing up and restoring emulator saves.
 - SFTP connection configuration via `config.ini`.
 - SSH key authentication with strict pinned host-key verification.
 - SFTP connection test with an 8-second connect timeout and bounded overall execution.
+- Manual snapshot of the complete OnionOS `Saves` directory.
+- SHA-256 manifest and temporary remote upload directory renamed only after successful transfer.
 - Host CMake build, ARM cross-build and OnionOS App Folder packaging.
 
 ## Build
@@ -63,11 +65,12 @@ The script downloads the Miyoo toolchain and SDL2 port source into `.deps/`. The
    remote_path=/retro-backup
    identity_file=id_ed25519
    known_hosts_file=known_hosts
+saves_path=../../Saves
    ```
 
 7. Launch Retro Backup, open **Settings**, and press **A** to test the SFTP connection.
 
-Relative credential paths are resolved beside the application. Absolute paths are also accepted. The app requires an OpenSSH-compatible `sftp` executable on the OnionOS device; if it is not available, the connection test reports that explicitly.
+Relative credential paths are resolved beside the application. Absolute paths are also accepted. The app requires OpenSSH-compatible `sftp`, `tar` and `sha256sum` executables on the OnionOS device. The configured remote directory must already exist and be writable. Manual backup creates a temporary archive on the SD card, uploads it with a SHA-256 manifest, and removes local temporary files afterward.
 
 ## Desktop development
 
