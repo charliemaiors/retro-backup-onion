@@ -8,6 +8,7 @@ struct Config {
     std::string remotePath{"/retro-backup"};
     std::string identityFile{"id_ed25519"};
     std::string knownHostsFile{"known_hosts"};
+    std::string savesPath{"../../Saves"};
 };
 class ConfigStore {
 public:
