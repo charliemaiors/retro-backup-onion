@@ -61,7 +61,7 @@ bool testSftpConnection(const Config& c,const ConfigStore& store,std::string& me
             message=(WIFEXITED(status)&&WEXITSTATUS(status)==127)?"SFTP CLIENT NOT INSTALLED":"SFTP AUTH OR HOST KEY FAILED";
             return false;
         }
-        if(r<0){message="SFTP CHECK FAILED";return false;}
+        if(r<0){unlink(stagedKey.c_str());message="SFTP CHECK FAILED";return false;}
         usleep(100000);
     }
     kill(pid,SIGTERM); waitpid(pid,&status,0); unlink(stagedKey.c_str()); message="SFTP CONNECTION TIMEOUT"; return false;
