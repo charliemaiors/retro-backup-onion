@@ -15,11 +15,10 @@
 - No credentials or private keys bundled in releases
 
 ## 0.3 - Manual backup
-- Discover all supported emulator save directories on OnionOS
-- Stable local staging and save-file inventory
-- Manifest with SHA-256 checksums
-- Versioned remote upload and completion marker
-- Progress, cancellation and error reporting
+- Snapshot the complete OnionOS `Saves` directory (saves, states and profiles)
+- SHA-256 manifest
+- Upload into a temporary remote directory and rename it only after successful transfer
+- Follow-up: progress reporting and cancellation
 
 ## 0.4 - History and restore
 - Remote version listing

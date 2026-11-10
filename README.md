@@ -97,7 +97,7 @@ The app does not patch `runtime.sh`, stop MainUI, or install a boot-time daemon.
 
 ## Current limitations
 
-- Backup, history, restore and interval scheduler are not implemented yet.
+- Manual backup implementation is being developed against the complete OnionOS `Saves` directory; history, restore and interval scheduler remain outstanding.
 - SFTP connectivity depends on an OpenSSH-compatible `sftp` client being present in OnionOS; this must be confirmed on physical hardware.
 - The connection test validates authentication and host-key trust, but does not yet verify remote directory write permissions.
 - UI/device controller mapping still requires hardware validation.
