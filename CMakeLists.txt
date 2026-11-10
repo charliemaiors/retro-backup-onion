@@ -14,6 +14,7 @@ add_executable(retro-backup
     src/font.cpp
     src/config.cpp
     src/sftp.cpp
+    src/backup.cpp
 )
 
 target_include_directories(retro-backup PRIVATE src)
