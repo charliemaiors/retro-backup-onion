@@ -1,6 +1,7 @@
 #include "app.hpp"
 #include "font.hpp"
 #include "sftp.hpp"
+#include "backup.hpp"
 #include <cstdlib>
 #include <algorithm>
 
@@ -109,6 +110,13 @@ void App::handleEvent(const SDL_Event& e) {
 }
 
 void App::activate() {
+    if (screen_ == Screen::Backup) {
+        std::string result;
+        const bool ok = createAndUploadBackup(config_, *configStore_, result);
+        backupMessage_ = result;
+        status_ = ok ? "BACKUP COMPLETE" : "BACKUP ERROR";
+        return;
+    }
     if (screen_ == Screen::Settings) {
         std::string result;
         const bool ok = testSftpConnection(config_, *configStore_, result);
@@ -185,12 +193,12 @@ void App::render() {
     SDL_SetRenderDrawColor(renderer_, bg.r, bg.g, bg.b, bg.a);
     SDL_RenderClear(renderer_);
     rb::drawText(renderer_, 32, 28, "RETRO BACKUP", white, 2);
-    rb::drawText(renderer_, 490, 28, "MVP 0.2", muted, 2);
+    rb::drawText(renderer_, 490, 28, "MVP 0.3", muted, 2);
 
     switch (screen_) {
         case Screen::Home: renderHome(); break;
         case Screen::Backup:
-            renderInfo("BACKUP NOW", {"BACKUP ENGINE NOT IMPLEMENTED", "THIS IS THE UI SCAFFOLD"});
+            renderInfo("BACKUP NOW", {backupMessage_, "A: START / RETRY BACKUP", "B: BACK"});
             break;
         case Screen::History:
             renderInfo("BACKUP HISTORY", {"NO BACKUPS YET", "CONFIGURE SFTP IN CONFIG.INI"});
